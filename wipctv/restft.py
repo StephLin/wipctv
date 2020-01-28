@@ -50,10 +50,11 @@ def stft(x: np.ndarray,
                              window=window,
                              center=center)
 
-    def phase_corrected_operator(spectrum_shape: np.ndarray, sr: int,
-                                 hop_length: int,
-                                 frequency_shift: float) -> np.ndarray:
-        """Phase corrected operator $E_{PC}$ for iPCTV
+
+def phase_corrected_operator(spectrum_shape: np.ndarray, sr: int,
+                             hop_length: int,
+                             frequency_shift: float) -> np.ndarray:
+    """Phase corrected operator $E_{PC}$ for iPCTV
 
     Args:
         spectrum_shape: Shape of the target spectrum.
@@ -67,7 +68,7 @@ def stft(x: np.ndarray,
 
     freq_idx, time_idx = [np.arange(n_idx) for n_idx in spectrum_shape]
     exp_term = np.kron(freq_idx, time_idx) * hop_length * frequency_shift / sr
-    exp_term *= -2j * np.pi
+    exp_term = -2j * np.pi * exp_term
     return np.exp(exp_term).reshape(spectrum_shape)
 
 
@@ -110,9 +111,9 @@ def instantaneous_phase_operator(x: np.ndarray, spectrum: np.ndarray, sr: int,
         raise ValueError("Mismatch of spectrum shapes %r and %r" %
                          (spectrum.shape, delta_complex.shape))
 
-        delta_complex = np.where(
-            np.abs(spectrum) > 1e-10, delta_complex / spectrum, 0)
-        delta = -np.imag(delta_complex)
+    delta_complex = np.where(
+        np.abs(spectrum) > 1e-10, delta_complex / spectrum, 0)
+    delta = -np.imag(delta_complex)
 
     time_idx = np.arange(delta.shape[1])
     delta_tilde = np.zeros(delta.shape)

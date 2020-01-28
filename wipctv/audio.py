@@ -147,8 +147,11 @@ class Audio:
         audio._frequency_shift = shift
 
         shape = audio.spectrum.shape
-        audio._e_pc = restft.phase_corrected_operator(shape, sr, hop_length)
-        audio._e_ipc = restft.instantaneous_phase_corrected_operator(
-            wave, audio.spectrum, sr, n_fft, hop_length, 'hann', shift)
+        e_pc = restft.phase_corrected_operator(shape, sr, hop_length, shift)
+        audio._e_pc = e_pc
+        e_ipc = restft.instantaneous_phase_operator(wave, audio.spectrum, sr,
+                                                    n_fft, hop_length, 'hann',
+                                                    shift)
+        audio._e_ipc = e_ipc
 
         return audio
