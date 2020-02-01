@@ -51,6 +51,30 @@ def stft(x: np.ndarray,
                              center=center)
 
 
+def istft(spectrum: np.ndarray,
+          hop_length: int,
+          window: Union[str, np.ndarray] = 'hann',
+          center: bool = False,
+          length: int = None) -> np.ndarray:
+    """Inverse Short-Time Fourier Transform with prior arguments.
+
+    Args:
+        spectrum: Complex-valued 2-D spectrum.
+        hop_length: Number of audio samples between adjacent STFT columns.
+        window: Window function for STFT. Default to `'hann'`.
+        center: Argument of `librosa.core.stft`. Default to `False`.
+        length: Length of 1-D wave.
+
+    Returns:
+        Real-valued 1-D wave.
+    """
+    return librosa.core.istft(spectrum,
+                              hop_length=hop_length,
+                              window=window,
+                              center=center,
+                              length=length)
+
+
 def phase_corrected_operator(spectrum_shape: np.ndarray, sr: int,
                              hop_length: int,
                              frequency_shift: float) -> np.ndarray:
