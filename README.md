@@ -29,6 +29,7 @@ You need the following packages:
 * `librosa>=0.7.2`
 * `SoundFile>=0.10`
 * `tensorflow>=2.0.0` (Probably `>=1.15.0` may also work. See [this commit](https://github.com/tensorflow/models/commit/831281cedfc8a4a0ad7c0c37173963fafb99da37) for details)
+* `tqdm>=4.41.1`
 
 They are also available in `requirements.txt`. So you can simply use `pip`
 command to install them.
