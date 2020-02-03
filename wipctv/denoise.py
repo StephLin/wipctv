@@ -38,10 +38,8 @@ class iPCTV:
         self._audio = audio
 
         self._wave = audio.wave.copy()
-
-        operator = audio.e_pc * audio.e_ipc
-        self._dual_spectrum = self.phi(self._wave, audio.n_fft,
-                                       audio.hop_length, 'hann', operator)
+        self._window = 'hann'
+        self._dual_spectrum = None
 
         self._lambda = 1e-1
         self._max_iter = 100
@@ -57,6 +55,10 @@ class iPCTV:
         return self._audio
 
     @property
+    def window(self) -> str:
+        return self._window
+
+    @property
     def wave(self) -> np.ndarray:
         return self._wave
 
@@ -67,6 +69,10 @@ class iPCTV:
     @property
     def length(self) -> int:
         return self.wave.shape[-1]
+
+    @property
+    def n_fft(self) -> int:
+        return self.audio.n_fft
 
     @property
     def hop_length(self) -> int:
@@ -127,9 +133,7 @@ class iPCTV:
     def energy_history(self) -> np.ndarray:
         return np.array(self._energy_history)
 
-    @classmethod
-    def phi(cls, wave: np.ndarray, n_fft: int, hop_length: int, window: str,
-            operator: np.ndarray) -> np.ndarray:
+    def phi(self, wave: np.ndarray) -> np.ndarray:
         """Phi operator for instantaneous phase corrected total variation.
 
         Args:
@@ -144,16 +148,15 @@ class iPCTV:
             Complex-valued 2-D time directional difference of spectrum.
         """
         spectrum = stft(wave,
-                        n_fft=n_fft,
-                        hop_length=hop_length,
-                        window=window)
-        dual_spectrum = np.zeros(spectrum.shape)
-        dual_spectrum[:, :-1] = np.diff(spectrum * operator)
+                        n_fft=self.n_fft,
+                        hop_length=self.hop_length,
+                        window=self.window)
+        dual_spectrum = np.zeros(spectrum.shape).astype(np.complex)
+        dual_spectrum[:, :-1] = np.diff(spectrum * self.operator, axis=1)
+        dual_spectrum[:, -1] = dual_spectrum[:, -2]
         return dual_spectrum
 
-    @classmethod
-    def phi_star(cls, dual_spectrum: np.ndarray, operator: np.ndarray,
-                 hop_length: int, length: int) -> np.ndarray:
+    def phi_star(self, dual_spectrum: np.ndarray) -> np.ndarray:
         """Phi star operator for instantaneous phase corrected total variation.
 
         Args:
@@ -167,11 +170,14 @@ class iPCTV:
         Returns:
             1-D real-valued wave, which is inverse of `dual_spectrum`.
         """
-        spectrum = np.zeros(dual_spectrum.shape)
-        spectrum[:, 1:] = -np.diff(dual_spectrum)
-        spectrum = spectrum / operator
+        spectrum = np.zeros(dual_spectrum.shape).astype(np.complex)
+        spectrum[:, 1:] = -np.diff(dual_spectrum, axis=1)
+        spectrum = spectrum / self.operator
 
-        return istft(spectrum, hop_length, length=length)
+        return istft(spectrum=spectrum,
+                     hop_length=self.hop_length,
+                     window=self.window,
+                     length=self.length)
 
     def _primal_phase(self) -> np.ndarray:
         """Primal part of the primal-dual splitting algorithm.
@@ -179,10 +185,10 @@ class iPCTV:
         Returns:
             Calculated wave data.
         """
-        wave = self.phi_star(self.dual_spectrum, self.operator,
-                             self.hop_length, self.length)
+        dual_wave = self.phi_star(self.dual_spectrum)
+        wave_diff = self.sigma_1 * (self.wave - self.audio.wave + dual_wave)
 
-        return self.wave - self.sigma_1 * (self.wave - self.audio.wave + wave)
+        return self.wave - wave_diff
 
     def _dual_phase(self, wave_updated: np.ndarray) -> np.ndarray:
         """Dual part of the primal-dual splitting algorithm.
@@ -207,6 +213,8 @@ class iPCTV:
     def compute(self) -> None:
         """Compute denoised audio using the primal-dual splitting algorithm."""
 
+        self._dual_spectrum = self.phi(self.wave)
+
         for _ in tqdm(range(self.max_iter)):
             wave = self._primal_phase()
             dual_spectrum = self._dual_phase(wave)
@@ -214,7 +222,7 @@ class iPCTV:
             # handling history
             self._wave_history.append(wave)
             self._dual_history.append(dual_spectrum)
-            self._energy_history.append(np.sum(np.abs(dual_spectrum)))
+            self._energy_history.append(np.sum(np.abs(self.phi(wave))))
 
             self._wave = wave
             self._dual_spectrum = dual_spectrum
