@@ -121,6 +121,22 @@ class iPCTV:
     def sigma_2(self) -> float:
         return self._sigma_2
 
+    @sigma_1.setter
+    def sigma_1(self, s: float) -> None:
+        if not isinstance(s, float):
+            raise ValueError("sigma_1 should be a float value")
+        if s <= 0:
+            raise ValueError("sigma_1 should greater than 0")
+        self._sigma_1 = s
+
+    @sigma_2.setter
+    def sigma_2(self, s: float) -> None:
+        if not isinstance(s, float):
+            raise ValueError("sigma_2 should be a float value")
+        if s <= 0:
+            raise ValueError("sigma_2 should greater than 0")
+        self._sigma_2 = s
+
     @property
     def wave_history(self) -> np.ndarray:
         return np.array(self._wave_history)
