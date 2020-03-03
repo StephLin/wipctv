@@ -109,7 +109,7 @@ class Audio:
                      sr: int = SAMPLE_RATE,
                      n_fft: int = STFT_WINDOW_SAMPLES,
                      hop_length: int = STFT_HOP_SAMPLES) -> 'Audio':
-        raw_wave, raw_sr = soundfile.read(wavfile)
+        raw_wave, raw_sr = soundfile.read(wavfile, dtype=np.int16)
 
         if len(raw_wave.shape) > 1:
             raw_wave = np.mean(raw_wave, axis=-1)
