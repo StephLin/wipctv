@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
 """Hyperparameters for YAMNet."""
 
 # The following hyperparameters (except PATCH_HOP_SECONDS) were used to train YAMNet,
