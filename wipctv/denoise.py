@@ -24,6 +24,7 @@
 """Audio denoising methods"""
 from typing import Union
 import numpy as np
+import scipy as sp
 from tqdm import tqdm
 
 from .restft import stft, istft
@@ -189,7 +190,7 @@ class iPCTV:
             1-D real-valued wave, which is inverse of `dual_spectrum`.
         """
         spectrum = np.zeros(dual_spectrum.shape).astype(np.complex)
-        spectrum[:, 1:] = -np.diff(dual_spectrum, axis=1)
+        spectrum[:, 1:] = -1 * np.diff(dual_spectrum, axis=1)
         spectrum = spectrum / self.operator
 
         return istft(spectrum=spectrum,
@@ -228,6 +229,50 @@ class iPCTV:
 
         return dual_spectrum
 
+    def compute(self, disable_wave_history=False) -> None:
+        """Compute denoised audio using the primal-dual splitting algorithm."""
+
+        self._dual_spectrum = self.phi(self.wave)
+
+        for _ in tqdm(range(self.max_iter)):
+            wave = self._primal_phase()
+            dual_spectrum = self._dual_phase(wave)
+
+            # handling history
+            if not disable_wave_history:
+                self._wave_history.append(wave)
+                self._dual_history.append(dual_spectrum)
+            self._energy_history.append(np.sum(np.abs(self.phi(wave))))
+
+            self._wave = wave
+            self._dual_spectrum = dual_spectrum
+
+
+class WiPCTV(iPCTV):
+    def __init__(self, audio: Audio):
+        super(WiPCTV, self).__init__(audio)
+        self._weight = np.ones(audio.n_fft)
+
+    @property
+    def weight(self) -> np.ndarray:
+        return self._weight
+
+    @weight.setter
+    def weight(self, w: np.ndarray) -> None:
+        w = np.array(w).flatten().astype(np.float)
+        if w.shape[0] != self.audio.fft_frequencies.shape[0]:
+            raise ValueError("Invalid shape of weight")
+        self._weight = w
+
+    def phi(self, wave: np.ndarray) -> np.ndarray:
+        dual_spectrum = super().phi(wave)
+        return np.multiply(dual_spectrum.T, self.weight).T
+
+    def phi_star(self, dual_spectrum: np.ndarray) -> np.ndarray:
+        weight = np.where(np.abs(self.weight) < 1e-10, 1, self.weight)
+        dual_spectrum = np.multiply(dual_spectrum.T, 1 / weight).T
+        return super().phi_star(dual_spectrum)
+
     def compute(self) -> None:
         """Compute denoised audio using the primal-dual splitting algorithm."""
 
@@ -240,7 +285,7 @@ class iPCTV:
             # handling history
             self._wave_history.append(wave)
             self._dual_history.append(dual_spectrum)
-            self._energy_history.append(np.sum(np.abs(self.phi(wave))))
+            self._energy_history.append(np.sum(np.abs(super().phi(wave))))
 
             self._wave = wave
             self._dual_spectrum = dual_spectrum
