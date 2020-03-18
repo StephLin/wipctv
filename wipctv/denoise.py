@@ -43,8 +43,10 @@ class iPCTV:
 
         self._lambda = 1e-1
         self._max_iter = 100
-        self._sigma_1 = .002
-        self._sigma_2 = 1
+        self._sigma_2 = 1e-3
+
+        fourier_norm = np.linalg.norm(sp.linalg.dft(audio.n_fft))**2
+        self._sigma_1 = 1 / (.5 + self._sigma_2 * 16 * fourier_norm)
 
         self._wave_history = []
         self._dual_history = []
