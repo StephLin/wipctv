@@ -3,4 +3,5 @@ librosa>=0.7.2
 SoundFile>=0.10
 tensorflow>=2.0.0
 tqdm>=4.41.1
-resampy
+resampy>=0.2.2
+pypesq>=1.2.4

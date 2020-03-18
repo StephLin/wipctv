@@ -23,8 +23,11 @@
 #
 """Reassignment of Short-Time Fourier Transform"""
 import numpy as np
+import matplotlib.pyplot as plt
 import soundfile
 import librosa
+from librosa.display import specshow
+import pypesq
 
 from .params import SAMPLE_RATE, STFT_WINDOW_SECONDS, STFT_HOP_SECONDS
 from . import restft
@@ -102,6 +105,45 @@ class Audio:
     @property
     def e_ipc(self) -> np.ndarray:
         return self._e_ipc
+
+    def pesq_score(self, ref_audio: 'Audio') -> float:
+        """
+        PESQ score for speech audio.
+
+        Args:
+            ref_audio: Reference audio of type `Audio`.
+        
+        Returns:
+            float -- PESQ score.
+        """
+        assert ref_audio.sr == self.sr, 'Sample rate should be same'
+        return pypesq.pesq(ref_audio.wave, self.wave, self.sr)
+
+    def snr(self, ref_audio: 'Audio') -> float:
+        """Signal-noise ratio (SNR) of audio w.r.t. reference audio.
+        
+        Arguments:
+            ref_audio {Audio} -- Reference audio of type `Audio`.
+        
+        Returns:
+            float -- Signal-noise ratio (SNR).
+        """
+        assert ref_audio.sr == self.sr, 'Sample rate should be same'
+        signal_var = self.wave.var()
+        noise = self.wave - ref_audio.wave
+        noise_var = noise.var()
+        return signal_var / noise_var if noise_var > 0 else np.infty
+
+    def specshow(self):
+        specshow(librosa.amplitude_to_db(np.abs((self.spectrum)), ref=np.max),
+                 sr=self.sr,
+                 y_axis='linear',
+                 x_axis='s',
+                 cmap='binary')
+        plt.title('Power spectrogram')
+        plt.colorbar(format='%+2.0f dB')
+        plt.clim(-40, 0)
+        plt.tight_layout()
 
     @classmethod
     def read_wavfile(cls,
