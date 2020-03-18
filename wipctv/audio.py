@@ -111,11 +111,11 @@ class Audio:
                      hop_length: int = STFT_HOP_SAMPLES) -> 'Audio':
         raw_wave, raw_sr = soundfile.read(wavfile, dtype=np.int16)
 
-        # normalize
-        raw_wave /= 2**16
-
         if len(raw_wave.shape) > 1:
             raw_wave = np.mean(raw_wave, axis=-1)
+
+        # normalize
+        raw_wave /= 2**16
 
         if raw_sr != sr:
             wave = librosa.core.resample(raw_wave, raw_sr, sr)
