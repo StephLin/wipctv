@@ -74,6 +74,10 @@ class iPCTV:
         return self.wave.shape[-1]
 
     @property
+    def sr(self) -> int:
+        return self.audio.sr
+
+    @property
     def n_fft(self) -> int:
         return self.audio.n_fft
 
@@ -246,6 +250,14 @@ class iPCTV:
 
             self._wave = wave
             self._dual_spectrum = dual_spectrum
+
+    def export_audio(self) -> Audio:
+        """Export denoise result as `Audio` type.
+        
+        Returns:
+            Audio -- instance of Audio with denoised result.
+        """
+        return Audio.read_wave(self.wave, self.sr, self.n_fft, self.hop_length)
 
 
 class WiPCTV(iPCTV):
